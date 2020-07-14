@@ -38,50 +38,59 @@ Available commands:
 /clear - Clear the papers
 """)
 
-def get_options():
-    df = pd.read_csv('papers.tsv', sep='\t')
+def get_options(df):
+    # df = pd.read_csv('papers.tsv', sep='\t')
     return df['title'].to_list()
 
+def remove_tag(text):
+    return re.sub('#статья146', '', text).strip()
 
+def remove_link(text):
+    return re.sub("(?P<url>https?://[^\s]+)", '', text).strip()
 
 def find_link(text):
     return re.search("(?P<url>https?://[^\s]+)", text).group("url")
 
 def parse_paper(update, context):
     df = pd.read_csv('papers.tsv', index_col=0, sep='\t')
-    txt = update.message.text
+    txt = remove_tag(update.message.text)
 
     url = find_link(txt)
     html = request.urlopen(url).read().decode('utf8')
-    html[:60]
     soup = BeautifulSoup(html, 'html.parser')
     title = soup.find('title').string
-    df = df.append({'message':txt,'link':url, 'title':title}, ignore_index=True)
+    df = df.append({'message':txt,'link':url, 'title':title, 'description':remove_link(txt)}, ignore_index=True)
     df.to_csv('papers.tsv', sep='\t')
     update.message.reply_text('Added')
 
 def poll(update, context):
-    update.message.reply_poll(question='Papers for next week',
-                            options=get_options(),
+    df = pd.read_csv('papers.tsv', sep='\t')
+    if not df.empty:
+        update.message.reply_poll(question='Papers for next week',
+                            options=df['title'].to_list(),
                             is_anonymous=True,
                             allows_multiple_answers=True)
-
-
+    else:
+        update.message.reply_text('No papers in the log currently')
 
 def clear(update, context):
-    df = pd.DataFrame(columns=['index', 'message', 'link', 'title']).to_csv('papers.tsv', sep='\t')
+    df = pd.DataFrame(columns=['index', 'message', 'link', 'title', 'description']).to_csv('papers.tsv', sep='\t')
+    update.message.reply_text('Cleared the papers')
 
 def info(update, context):
     df = pd.read_csv('papers.tsv', index_col=0, sep='\t')
-    update.message.reply_text('\n\n####################\n\n'.join(df['message'].to_list()),
+    if not df.empty:
+        update.message.reply_text('\n\n####################\n\n'.join((df['title'] + '\n\n' + df['description'] + '\n' + df['link']).to_list()),
                                 disable_web_page_preview=True)
+    else:
+        update.message.reply_text('No papers in the log currently')
 
 def error(update, context):
     '''
     Print warnings in case of errors
     '''
     logger.warning('Update "%s" caused error "%s"',
-                   update,
+                    update,
                     context.error)
 
 
