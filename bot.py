@@ -62,7 +62,7 @@ def get_poll_options(df):
     return [x for x in df.title.apply(lambda x: x if len(x) < 99 else x[:97] + '...')]
 
 def get_info(df):
-    '\n\n####################\n\n'.join([x for x in (df['title'] + '\n\n' + df['link'])])
+    return '\n\n####################\n\n'.join([x for x in (df['title'] + '\n\n' + df['link'])])
 
 def poll(update, context):
     df = pd.read_csv('papers.tsv', sep='\t')
