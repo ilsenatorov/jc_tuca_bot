@@ -53,8 +53,7 @@ def find_link(text):
 
 def parse_paper(update, context):
     df = pd.read_csv('papers.tsv', index_col=0, sep='\t')
-    txt = remove_tag(update.message.text)
-
+    txt = remove_tag(update.message.text).encode('utf-8')
     url = find_link(txt)
     html = request.urlopen(url).read().decode('utf8')
     soup = BeautifulSoup(html, 'html.parser')
@@ -80,7 +79,7 @@ def clear(update, context):
 def info(update, context):
     df = pd.read_csv('papers.tsv', index_col=0, sep='\t')
     if not df.empty:
-        update.message.reply_text('\n\n####################\n\n'.join((df['title'] + '\n\n' + df['description'] + '\n' + df['link']).to_list()),
+        update.message.reply_text('\n\n####################\n\n'.join((df['title'] + '\n\n' + df['link']).to_list()),
                                 disable_web_page_preview=True)
     else:
         update.message.reply_text('No papers in the log currently')
