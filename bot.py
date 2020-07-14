@@ -38,10 +38,6 @@ Available commands:
 /clear - Clear the papers
 """)
 
-def get_options(df):
-    # df = pd.read_csv('papers.tsv', sep='\t')
-    return df['title'].to_list()
-
 def remove_tag(text):
     return re.sub('#статья146', '', text).strip()
 
@@ -85,7 +81,7 @@ def clear(update, context):
 def info(update, context):
     df = pd.read_csv('papers.tsv', index_col=0, sep='\t')
     if not df.empty:
-        update.message.reply_text('\n\n####################\n\n'.join((df['title'] + '\n\n' + df['link']).to_list()),
+        update.message.reply_text(get_info(df),
                                 disable_web_page_preview=True)
     else:
         update.message.reply_text('No papers in the log currently')
