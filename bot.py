@@ -53,7 +53,7 @@ def find_link(text):
 
 def parse_paper(update, context):
     df = pd.read_csv('papers.tsv', index_col=0, sep='\t')
-    txt = remove_tag(update.message.text).encode('utf-8')
+    txt = update.message.text
     url = find_link(txt)
     html = request.urlopen(url).read().decode('utf8')
     soup = BeautifulSoup(html, 'html.parser')
@@ -62,11 +62,17 @@ def parse_paper(update, context):
     df.to_csv('papers.tsv', sep='\t')
     update.message.reply_text('Added')
 
+def get_poll_options(df):
+    return [x for x in df.title.apply(lambda x: x if len(x) < 99 else x[:97] + '...')]
+
+def get_info(df):
+    '\n\n####################\n\n'.join([x for x in (df['title'] + '\n\n' + df['link'])])
+
 def poll(update, context):
     df = pd.read_csv('papers.tsv', sep='\t')
     if not df.empty:
         update.message.reply_poll(question='Papers for next week',
-                            options=df['title'].to_list(),
+                            options=get_poll_options(df),
                             is_anonymous=True,
                             allows_multiple_answers=True)
     else:
