@@ -58,7 +58,7 @@ def parse_paper(update, context):
     html = request.urlopen(url).read().decode('utf8')
     soup = BeautifulSoup(html, 'html.parser')
     title = soup.find('title').string
-    df = df.append({'message':txt,'link':url, 'title':title, 'description':remove_link(txt)}, ignore_index=True)
+    df = df.append({'link':url, 'title':title}, ignore_index=True)
     df.to_csv('papers.tsv', sep='\t')
     update.message.reply_text('Added')
 
@@ -73,7 +73,7 @@ def poll(update, context):
         update.message.reply_text('No papers in the log currently')
 
 def clear(update, context):
-    df = pd.DataFrame(columns=['index', 'message', 'link', 'title', 'description']).to_csv('papers.tsv', sep='\t')
+    df = pd.DataFrame(columns=['index', 'link', 'title']).to_csv('papers.tsv', sep='\t')
     update.message.reply_text('Cleared the papers')
 
 def info(update, context):
