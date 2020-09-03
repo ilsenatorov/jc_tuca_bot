@@ -1,29 +1,24 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 '''
-The Degenerate Bot, Zhenya. Parse the token into the start_zhenya function or with -q if launching as script.
+Bot for parsing the articles. Parse the token into the start_bot function or with -t if launching as script.
 '''
 import argparse
 import logging
-
+import re
 from urllib import request
-from bs4 import BeautifulSoup
-
-import telegram
-from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove
-from telegram.ext import (CommandHandler, Filters,
-                          RegexHandler, Updater)
 
 import pandas as pd
-import re
+
+import telegram
+from bs4 import BeautifulSoup
+from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove
+from telegram.ext import CommandHandler, Filters, RegexHandler, Updater
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 ### BOT COMMANDS ###
-
-CHOOSING, RMGROUP, ADDGROUP, RMFROMGROUP = range(4)
-
 
 
 def start(update, context):
@@ -39,15 +34,27 @@ Available commands:
 """)
 
 def remove_tag(text):
+    '''
+    Remove the hashtag from the text
+    '''
     return re.sub('#статья146', '', text).strip()
 
 def remove_link(text):
+    '''
+    Remove the links from the text
+    '''
     return re.sub("(?P<url>https?://[^\s]+)", '', text).strip()
 
 def find_link(text):
+    '''
+    Extracts the link from the text
+    '''
     return re.search("(?P<url>https?://[^\s]+)", text).group("url")
 
 def parse_paper(update, context):
+    '''
+    This is called when a message that contains info about the article is sent
+    '''
     df = pd.read_csv('papers.tsv', index_col=0, sep='\t')
     txt = update.message.text
     url = find_link(txt)
@@ -59,12 +66,22 @@ def parse_paper(update, context):
     update.message.reply_text('Added')
 
 def get_poll_options(df):
+    '''
+    Given the dataframe of the articles, create all the poll options.
+    Note the limit on message length of 100 symbols
+    '''
     return [x for x in df.title.apply(lambda x: x if len(x) < 99 else x[:97] + '...')]
 
 def get_info(df):
+    '''
+    Compile a message with info about the articles
+    '''
     return '\n\n####################\n\n'.join([x for x in (df['title'] + '\n\n' + df['link'])])
 
 def poll(update, context):
+    '''
+    Used when /poll is called
+    '''
     df = pd.read_csv('papers.tsv', sep='\t')
     if not df.empty:
         update.message.reply_poll(question='Papers for next week',
@@ -75,10 +92,16 @@ def poll(update, context):
         update.message.reply_text('No papers in the log currently')
 
 def clear(update, context):
+    '''
+    Clears the dataframe
+    '''
     df = pd.DataFrame(columns=['index', 'link', 'title']).to_csv('papers.tsv', sep='\t')
     update.message.reply_text('Cleared the papers')
 
 def info(update, context):
+    '''
+    Called when /info is called
+    '''
     df = pd.read_csv('papers.tsv', index_col=0, sep='\t')
     if not df.empty:
         update.message.reply_text(get_info(df),
@@ -97,7 +120,10 @@ def error(update, context):
 
 
 
-def start_zhenya(token):
+def start_bot(token):
+    '''
+    The main runner function, starts the bot and keeps it running
+    '''
     updater = Updater(token, use_context=True)
     dispatcher = updater.dispatcher
 
@@ -108,8 +134,6 @@ def start_zhenya(token):
     dispatcher.add_handler(CommandHandler('clear', clear))
     dispatcher.add_handler(CommandHandler('info', info))
     dispatcher.add_error_handler(error)
-
-
     # Start the bot
     updater.start_polling()
     # idle is better than just polling, because of Ctrl+c
@@ -119,4 +143,4 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument("-t", help="your bot API token", type=str)
     args = parser.parse_args()
-    start_zhenya(token=args.t)
+    start_bot(token=args.t)
